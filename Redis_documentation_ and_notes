@@ -1,0 +1,59 @@
+REDIS - primarily for  for small, lightning-fast text and number data
+
+
+Redis exist in a port in  our computer , Thats  where the  whole thign goes in and out becoz its basicly built on top of a TCP protocol. 
+
+TCP protocol, the port  must exist, stay open, and actively listen on your machine for the connection to work
+
+
+
+
+
+is basicly using a protocol built on top of TCP called RESP, 
+RESP contains - SAVE, GET , SET etc. which are basicaly calling a few commands liek , 
+it will be sent over, NOT IN JSON 
+*3\r\n
+Something like this, 
+2 ways of persistence - ie saving data to the HARDISK 
+RDB - take a snapshot of the final data periodically
+and  
+AOF - every command is stored in the secondary storage- 
+it will be reexecuted 
+PROBLEM WITH AOF is , it will have longer boot up time , whereas RDB will be if power lost
+in that particular time then it will be a porblm 
+U normally usea. hybrid of both for production grade
+
+
+WAYS Of loading - 
+1) Lazy loading - 
+the logci in the code will , figure out what is being most common etc, will be pushed to REDIS
+
+Python has a library, or a connector called - redis-py
+
+
+REDIS uses the port 6379,and binds to  hte IP adress of the host - 
+this is default but you can obviously change hte port
+
+SOCKET IS A 4 tuple ie soruce + destination IP + port 
+
+
+REDIS CAN have multiple types of data- time sereis data for example to udnerstnad well 
+series
+TS.CREATE - Create a new time series
+Syntax: TS.CREATE key [RETENTION retentionPeriod] [ENCODING <UNCOMPRESSED | COMPRESSED>] [CHUNK SIZE size] [DUPLICATE POLICY <BLOCK | FIRST | LAST | MIN | MAX | SUM>] [LABELS label value [label value ...]]
+
+
+THIS IS BASICALLY to cache time series data for the required tim e
+
+
+Today Redis is multi- threaded because there can be many ppl who are coming in , and
+netwrok IO wld be a porblem , meaning someones netwrok will be slow,
+
+for a single thread lets say 
+WAIT SO LIEK THE problem is 
+LIek say 
+U hve 1000 ppl 
+And liek 990 of htem have terrible ass wifi 
+SO liek U to go to the 991st perosn U may hve to do 990 context switch 
+and liek poll hte previous one etc liek extra cpu wrok 
+

@@ -1,0 +1,79 @@
+Redis_v1
+We saw that the huge request was corrupting the server, 
+
+RAN into this problem where when i was sending over 600mb back to the client 
+THAT CLIENT WAS ZONED OUT i got 
+Response length: 600000000
+Error sending response: mostly large response [Errno 35] Resource temporarily unavailable
+SELECTOR RETURNED: 4 SERVER SOCKET
+Connected: ('127.0.0.1', 51030)
+
+
+BUT SERVER WAS accepting another client 
+
+
+When tryna scale to 10k users + i did 2 tests , i ran into EPIDERMAL ports limit exactly at 
+16348
+
+
+I treid stres testing, made a Redis_Test_script 2 behaviours - 
+simple behaviour-
+just create the client it sets value gets value thats it 
+Hard behaviour - 
+sets value , again sets same value then when response not OK it will send same request 100 times
+
+ASYNCIO queue is CO ROUTINE SAFE - MEANING WHEN U hAVE THE AWAIT KEYWORD , IT WILL NOT GO TO THE 
+next job until that queue for that routine is filled? 
+
+
+I also tried Testing whether this is actually asynchronous by using queue, we saw that 
+the calling of the function is sequential , ie CPU time is seuqtnal but then 
+doing it isnt, 
+
+I also investigated that hte OS allows for only 16538 ports to be open so i used termina
+opened up other ports using 
+
+using sudo tcpdump i also , analysed hte apcketoutflows i had to do loopback because its the same computer
+
+
+
+I understood why ports simply cannot be opened, because, when opening up a port , its basicly open 
+to any sort of connection , 
+When you connect to Netflix, your app or browser only talks to Port 443 (HTTPS). 
+They will never ask you to connect to port 5001, 5002, or 8080.
+
+
+
+FIRST MY OS FD had a limit since its treating concreutn connections as. a FD
+it cld only have 128 at once in the queue , meaning if i set up 40 50k concruetn connections 
+it was failing , so to simulate 40k users i did 
+FYI this queue lives on the RAM , so we dont have to actually care about increasing this, 
+in a real time env , becoz the latency is much slower, since for my computer, the distance as 
+not the issue, i had to raise the queue limit , 
+
+
+
+
+sudo sysctl -w kern.ipc.somaxconn=180  to 40000 
+# just a simple numebr 
+
+then changed hte no of EPEPHERMAL ports 
+
+
+FYI this was just a basic test to TEST , how many concurent this can actually handle 
+
+
+
+-Air redis_clone % netstat -an -p tcp | grep 45123 | grep ESTABLISHED | wc -l
+   89304
+(.venv) glennmain@glenns-MacBook-Air redis_clone %
+tcp4      18      0  127.0.0.1.45123        127.0.0.1.55641        ESTABLISHED
+(.venv) glennmain@glenns-MacBook-Air redis_clone % netstat -an -p tcp | grep 45123 | grep ESTABLISHED | wc -l
+   89304
+(.venv) glennmain@glenns-MacBook-Air redis_clone % 
+
+DID THIS TO SEE HOW MANy connections were actually alive at once 
+
+
+
+
