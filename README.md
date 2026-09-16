@@ -12,3 +12,8 @@
 - AOF persistence
 - RDB-style snapshot persistence
 - Recovery of persisted state after restart
+- VERY slow onnection detection and serving other client 
+
+
+Current Limitations - 
+Cannot process 2 or 3 or n simultaneous commands together
