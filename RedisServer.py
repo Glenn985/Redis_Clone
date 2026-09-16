@@ -9,8 +9,6 @@ from Commandhandler import CommandHandler
 from datastore import DataStore
 from RespParser_decoder import RespParser_decoder
 from Resp_Encoder import RespParser_encoder
-
-
 datastore = DataStore()
 handler = CommandHandler(datastore) # handler execute does all the transfer , everything about hte data
 
@@ -21,6 +19,7 @@ class RedisServer:
         self.port = port
         self.selector = selectors.DefaultSelector()
         self.output_buffers = {}
+        self.input_buffers = {}
         self.AOF = AOF #this is a boolean
 
     def setUp(self):
@@ -79,9 +78,25 @@ class RedisServer:
             ## this is for data disconection ti will sned b"" byte"
             #post getting the data ie after event_read,
             # we are allowing for massive amoubts of data to be sent
-                request = data.decode("utf-8").strip()
-                print("Received:", request) 
-                print("AOF state:", self.AOF)
+            
+                input_buffer = data.decode("utf-8")
+                print("Received:", input_buffer) 
+                self.input_buffers.setdefault(client, "")#initialising ainput buffer
+                self.input_buffers[client] += input_buffer
+                input_buffer = self.input_buffers[client] 
+
+                if not self.check_resp(input_buffer):
+                    print("In here, input buffer not complete")
+                    return  
+                else:
+                    request = input_buffer
+                    self.input_buffers[client] = ""
+
+                
+              
+                output_buffer = self.output_buffers.get(client, b"")
+                print("AOF state:", self.AOF)  
+
                 response = self.handle_request(request,self.AOF)
                 print("Response: FOR TEST ", response)
                 if response == None:
@@ -151,6 +166,70 @@ class RedisServer:
                     key.fileobj,
                     mask
                 )
+
+
+    #this will be called every time the buffer is filled, we will cehck if the initial 
+    #*3\r\n$3\r\nSET\r\n$5\r\nglenn\r\n$4\r\n1231\r\n'
+    #FOR THIS WE NEED TO GET THE post number of the * and for the 
+    # len we get of that part[3] we shdl oinly execute after we get hte n 
+    def check_resp(self, buffer):
+    # 1. We need at least the *N\r\n header
+        if not buffer.startswith("*"):
+            return False
+
+        header_end = buffer.find("\r\n")
+        if header_end == -1:
+            print("Header end not found in buffer")
+            return False
+        
+        # *3\r\n  -> 3
+        n = int(buffer[1:header_end])
+
+        # pos now points at the first $
+        pos = header_end + 2
+
+        # 2. We expect exactly n bulk strings
+        for _ in range(n):
+
+            # Do we even have the $ header yet?
+            if pos >= len(buffer):
+                print("Not enough data for $ header")
+                return False
+
+            if buffer[pos:pos+1] != "$":
+                print("Expected $ at position", pos)
+                return False
+
+            # Find end of $N\r\n
+            length_end = buffer.find("\r\n", pos)
+
+            if length_end == -1:
+                print("Could not find end of length for $ header starting at position", pos)
+                return False
+
+            # $5\r\n -> 5
+            length = int(buffer[pos + 1:length_end])
+
+            # pos now points at actual payload
+            pos = length_end + 2
+
+            # Need:
+            # [length bytes] + [\r\n]
+            if len(buffer) < pos + length + 2:
+                print("Not enough data for payload, expected", length, "bytes at position", pos, "received only" , len(buffer) - pos)
+                return False
+
+            # Make sure payload actually ends in CRLF
+            if buffer[pos + length : pos + length + 2] != "\r\n":
+                print("Payload does not end with CRLF at position", pos + length)
+                return False
+
+            # Jump over payload + CRLF
+            pos = pos + length + 2
+
+        return True
+         
+         
          
 server = RedisServer(
     host="127.0.0.1",
