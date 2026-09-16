@@ -12,7 +12,7 @@
 - AOF persistence
 - RDB-style snapshot persistence
 - Recovery of persisted state after restart
-- VERY slow onnection detection and serving other client 
+- VERY slow connection detection , processes that request only after entire request has come in (using buffer, and resp protocol to determine if whole message has come in ), but also services the other clients
 
 
 Current Limitations - 
